@@ -37,8 +37,40 @@ done
 
 `scoring.py` prints the official score (2 attempts per test input; a task scores the
 fraction of its test inputs that are solved; the final score is the mean over tasks).
-The Harbor side and the parity results are described in the adapter README
-(`src/arc-agi-2-autoadapter/README.md` in the Harbor adapters repository).
+For runs 2 and 3, each run was split into 4 `run_all.py` processes with disjoint
+`--task_list_file` lists of 30 tasks (same `--save_submission_dir`), because one
+`run_all.py` process runs at most 32 tasks at a time (Python's default thread pool).
+This changes only the wall time. The runs used this branch at commit `ccbedea` from a
+clean checkout (only the untracked `data/arc-agi` data folder was added); later commits
+on this branch change only this README.
+
+## Harbor side
+
+Adapter `arc-agi-2-autoadapter` (Harbor adapters repository, `src/arc-agi-2-autoadapter/`),
+Harbor `0.25.0`, parity agent `arc-harness-chat@1.0.0`
+(`arc_agi_2_autoadapter.parity_agent:ArcHarnessAgent`: the same Chat Completions call,
+parser and retry rule as this harness), 2 attempts per test input:
+
+```bash
+cd src/arc-agi-2-autoadapter && uv run arc-agi-2-autoadapter --output-dir ../../datasets/arc-agi-2-autoadapter && cd ../..
+export OPENAI_API_KEY=...  OPENAI_BASE_URL=...
+PYTHONPATH=src/arc-agi-2-autoadapter/src harbor run \
+  -c src/arc-agi-2-autoadapter/run_arc-agi-2-autoadapter_parity.yaml --job-name parity-harbor-run1
+(cd src/arc-agi-2-autoadapter && uv run arc-agi-2-autoadapter-score ../../jobs/parity-harbor-run1 \
+  --dataset-dir ../../datasets/arc-agi-2-autoadapter)
+```
+
+## Parity results
+
+Model `deepseek-v4.1-flash` (the endpoint reports `deepseek-v4-1-flash-261017`), all 120
+public evaluation tasks (167 test inputs), 3 runs per side. ARC-AGI-2 score (%):
+
+| Side | Run 1 | Run 2 | Run 3 | Mean ± sample SEM |
+|---|---|---|---|---|
+| This harness (original) | 79.44 | 76.94 | 74.86 | 77.08 ± 1.32 |
+| Harbor adapter | 78.19 | 76.25 | 78.33 | 77.59 ± 0.67 |
+
+The run ranges overlap.
 
 ---
 
