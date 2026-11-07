@@ -1,3 +1,47 @@
+# Harbor parity fork (branch `harbor-parity`)
+
+This branch is used to compare the official ARC Prize harness with the Harbor adapter
+`arc-agi-2-autoadapter` (ARC-AGI-2 public evaluation set). It is the upstream harness at
+commit `54629ad84f60bf348c460d2326e33fc42ebee3ac` with two changes:
+
+1. `src/arc_agi_benchmarking/prompts/prompt_manager.py`: the prompt gets one more paragraph
+   at the end (`HARBOR_OUTPUT_INSTRUCTION`): "Write your final answer to the file
+   `/app/output.json`: ...". The Harbor tasks append the same paragraph to the same
+   prompt, so both sides send byte-identical prompts. Nothing else in prompt
+   construction, parsing, attempts or scoring is changed.
+2. `src/arc_agi_benchmarking/models.yml`: a model config `deepseek-v4.1-flash-harbor-parity`
+   (`provider: openai`, `api_type: chat_completions`, `max_tokens: 131072`, `stream: true`,
+   no temperature). The OpenAI client reads `OPENAI_BASE_URL`, so any OpenAI-compatible
+   endpoint that serves `deepseek-v4.1-flash` works. Pricing is set to 0 (unknown).
+
+## Reproduce the original side of the parity experiment
+
+```bash
+git clone -b harbor-parity https://github.com/MrLYG/arc-agi-benchmarking.git
+cd arc-agi-benchmarking
+uv sync --python 3.12
+git clone https://github.com/arcprize/ARC-AGI-2.git data/arc-agi
+git -C data/arc-agi checkout f3283f727488ad98fe575ea6a5ac981e4a188e49
+export OPENAI_API_KEY=...          # key for the endpoint
+export OPENAI_BASE_URL=...         # OpenAI-compatible endpoint, e.g. https://<host>/v1
+for run in run1 run2 run3; do
+  uv run cli/run_all.py --config deepseek-v4.1-flash-harbor-parity \
+    --data_dir data/arc-agi/data/evaluation \
+    --save_submission_dir submissions/$run --logs-base-dir logs/$run \
+    --num_attempts 2 --retry_attempts 2
+  uv run src/arc_agi_benchmarking/scoring/scoring.py \
+    --task_dir data/arc-agi/data/evaluation \
+    --submission_dir submissions/$run --results_dir results/$run
+done
+```
+
+`scoring.py` prints the official score (2 attempts per test input; a task scores the
+fraction of its test inputs that are solved; the final score is the mean over tasks).
+The Harbor side and the parity results are described in the adapter README
+(`src/arc-agi-2-autoadapter/README.md` in the Harbor adapters repository).
+
+---
+
 # Testing systems with ARC-AGI
 
 Run ARC-AGI tasks against multiple model adapters (OpenAI, Anthropic, Gemini, Fireworks, Grok, OpenRouter, X.AI, custom etc.) with built-in rate limiting, retries, and scoring.

@@ -47,6 +47,25 @@ models:
       output: 4.40
 
 ################
+## Harbor parity ##
+################
+
+  # Harbor parity (arc-agi-2-autoadapter): DeepSeek V4.1 Flash through an
+  # OpenAI-compatible gateway. The OpenAI client reads OPENAI_BASE_URL from the
+  # environment. max_tokens is large because reasoning tokens count toward it.
+  - name: "deepseek-v4.1-flash-harbor-parity"
+    model_name: "deepseek-v4.1-flash"
+    provider: "openai"
+    api_key_env: "OPENAI_API_KEY"
+    api_type: "chat_completions"
+    max_tokens: 131072
+    stream: true
+    pricing:
+      date: "2026-11-06"
+      input: 0.0
+      output: 0.0
+
+################
 #### OpenAI ####
 ################
 
